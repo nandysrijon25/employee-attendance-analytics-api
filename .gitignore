@@ -1,0 +1,13 @@
+.env
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.idea/
+.vscode/
+
+# Original assignment materials
+PROBLEM_STATEMENT.docx
+DATA_MODEL.md
+openapi.yaml
