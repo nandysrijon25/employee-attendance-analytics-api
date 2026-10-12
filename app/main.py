@@ -272,6 +272,8 @@ def create_indexes():
     db.attendance_logs.create_index([("emp_code", ASCENDING), ("date", ASCENDING)], unique=True, name="uniq_employee_attendance_date")
     db.attendance_logs.create_index([("date", DESCENDING), ("emp_code", ASCENDING)], name="attendance_date_employee")
     db.attendance_logs.create_index([("emp_code", ASCENDING), ("date", DESCENDING)], name="attendance_employee_date")
+    # Supports finding the latest punch-in for an employee efficiently.
+    db.attendance_logs.create_index([("emp_code", ASCENDING), ("punch_in", DESCENDING)], name="attendance_employee_punch_in")
     db.attendance_logs.create_index([("date", ASCENDING), ("late_minutes", DESCENDING)], name="attendance_date_late")
     db.attendance_logs.create_index([("date", ASCENDING), ("status", ASCENDING), ("emp_code", ASCENDING)], name="attendance_date_status_employee")
 
@@ -470,7 +472,13 @@ def regularize_attendance(emp_code: str, date: str, body: RegularizeIn):
         "overtime_minutes": overtime,
         "half_day": half,
     }
+    # Missing derived fields in seeded records have defined semantic defaults:
+    # late/overtime = 0 and half_day = false. Do not report these as changes
+    # when a regularization only modifies another field.
     old_values = {k: old.get(k) for k in proposed}
+    old_values["late_minutes"] = old.get("late_minutes", 0)
+    old_values["overtime_minutes"] = old.get("overtime_minutes", 0)
+    old_values["half_day"] = old.get("half_day", False)
     changes = {}
     for field, new_value in proposed.items():
         old_value = old_values.get(field)
